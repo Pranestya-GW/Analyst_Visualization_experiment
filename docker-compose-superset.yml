@@ -1,0 +1,50 @@
+version: "3.8"
+
+# ============================================================================
+# Apache Superset — modern data exploration & visualization platform
+# Access:  http://localhost:8088
+# Login:   admin / admin
+# Docs:    https://superset.apache.org/docs/
+# ============================================================================
+
+services:
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    environment:
+      SUPERSET_SECRET_KEY: "change_me_to_a_random_string_1234567890"
+    ports:
+      - "8088:8088"
+    volumes:
+      - superset_data:/app/superset_home
+      - superset_config:/app/pythonpath
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+  # One-time init container — creates admin user and initializes DB
+  superset-init:
+    image: apache/superset:latest
+    container_name: superset_init
+    depends_on:
+      - superset
+    environment:
+      SUPERSET_SECRET_KEY: "change_me_to_a_random_string_1234567890"
+    entrypoint: >
+      /bin/sh -c "
+        pip install psycopg2-binary &&
+        superset fab create-admin --username admin --firstname Admin --lastname User --email admin@admin.com --password admin &&
+        superset db upgrade &&
+        superset init
+      "
+    networks:
+      - bi-network
+
+volumes:
+  superset_data:
+  superset_config:
+
+networks:
+  bi-network:
+    name: bi-network
+    external: true

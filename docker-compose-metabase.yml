@@ -1,18 +1,30 @@
 version: "3.8"
 
+# ============================================================================
+# Metabase — open-source BI & analytics
+# Access:  http://localhost:5000
+# Setup:   Follow the web UI wizard on first launch
+# Docs:    https://www.metabase.com/docs/
+# ============================================================================
+
 services:
   metabase:
     image: metabase/metabase:latest
     container_name: metabase
-    hostname: metabase
     volumes:
-      - /dev/urandom:/dev/random:ro
       - metabase_data:/metabase-data
     environment:
       MB_DB_FILE: /metabase-data/metabase.db
     ports:
-      - 5000:3000
+      - "5000:3000"
     restart: unless-stopped
+    networks:
+      - bi-network
 
 volumes:
   metabase_data:
+
+networks:
+  bi-network:
+    name: bi-network
+    external: true

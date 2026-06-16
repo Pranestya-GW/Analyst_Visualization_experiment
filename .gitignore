@@ -1,0 +1,7 @@
+# Docker volumes (large binary data)
+*.db
+metabase_data/
+grafana_data/
+superset_data/
+redash_postgres/
+bi_postgres_data/

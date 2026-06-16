@@ -1,0 +1,34 @@
+version: "3.8"
+
+# ============================================================================
+# Grafana — observability dashboards & analytics
+# Access:  http://localhost:3000
+# Login:   admin / admin
+# Docs:    https://grafana.com/docs/
+# ============================================================================
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-piechart-panel"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - grafana_config:/etc/grafana
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+volumes:
+  grafana_data:
+  grafana_config:
+
+networks:
+  bi-network:
+    name: bi-network
+    external: true

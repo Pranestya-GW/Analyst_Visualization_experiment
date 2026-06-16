@@ -1,0 +1,99 @@
+version: "3.8"
+
+# ============================================================================
+# Redash — SQL-focused dashboard & visualization
+# Access:  http://localhost:5001
+# Setup:   Run the init commands below on first launch
+# Docs:    https://redash.io/help/
+#
+# First-time setup:
+#   docker exec -it redash_server create_db
+#   docker exec -it redash_server manage database create_tables
+# ============================================================================
+
+services:
+  redash_server:
+    image: redash/redash:latest
+    container_name: redash_server
+    environment:
+      REDASH_REDIS_URL: "redis://redis:6379/0"
+      REDASH_DATABASE_URL: "postgresql://redash:redash_pass@redash_db/redash"
+      REDASH_COOKIE_SECRET: "change_me_to_random_string_123"
+      REDASH_SECRET_KEY: "change_me_to_another_random_456"
+    ports:
+      - "5001:5000"
+    depends_on:
+      redash_db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+  redash_scheduler:
+    image: redash/redash:latest
+    container_name: redash_scheduler
+    command: scheduler
+    environment:
+      REDASH_REDIS_URL: "redis://redis:6379/0"
+      REDASH_DATABASE_URL: "postgresql://redash:redash_pass@redash_db/redash"
+    depends_on:
+      redash_db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+  redash_worker:
+    image: redash/redash:latest
+    container_name: redash_worker
+    command: worker
+    environment:
+      REDASH_REDIS_URL: "redis://redis:6379/0"
+      REDASH_DATABASE_URL: "postgresql://redash:redash_pass@redash_db/redash"
+      QUEUES: "queries,scheduled_queries,celery"
+      WORKERS_COUNT: 2
+    depends_on:
+      redash_db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+  redash_db:
+    image: postgres:16
+    container_name: redash_db
+    environment:
+      POSTGRES_DB: redash
+      POSTGRES_USER: redash
+      POSTGRES_PASSWORD: redash_pass
+    volumes:
+      - redash_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redash -d redash"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redash_redis
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+volumes:
+  redash_postgres:
+
+networks:
+  bi-network:
+    name: bi-network
+    external: true
